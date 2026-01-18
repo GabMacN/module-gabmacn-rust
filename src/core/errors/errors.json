@@ -1,0 +1,102 @@
+{
+  "GMN_CORE_000": {
+    "title": "Unknown Error",
+    "message": "We are sorry, but an unknown error has occurred. That is all we know.",
+    "hint": "Inspect the origin below the title for more details."
+  },
+  "GMN_APP_001": {
+    "title": "Configuration Error",
+    "message": "The application configuration is invalid or incomplete.",
+    "hint": "Check the configuration file and ensure all required settings are present."
+  },
+  "GMN_APP_002": {
+    "title": "Invalid Input",
+    "message": "The provided input does not meet the required specifications.",
+    "hint": "Review the input requirements and provide valid data."
+  },
+  "GMN_APP_003": {
+    "title": "Operation Failed",
+    "message": "The requested operation could not be completed.",
+    "hint": "Check the operation parameters and try again."
+  },
+  "GMN_APP_004": {
+    "title": "Timeout Error",
+    "message": "The operation exceeded the maximum allowed time.",
+    "hint": "Try again or increase the timeout duration if configurable."
+  },
+  "GMN_APP_005": {
+    "title": "Resource Exhausted",
+    "message": "A system resource has been exhausted or is unavailable.",
+    "hint": "Free up resources and try again."
+  },
+  "GMN_APP_006": {
+    "title": "Database Error",
+    "message": "An error occurred while accessing the database.",
+    "hint": "Verify the database connection and try again."
+  },
+  "GMN_APP_007": {
+    "title": "Serialization Error",
+    "message": "Failed to serialize or deserialize data.",
+    "hint": "Ensure the data format matches the expected schema."
+  },
+  "GMN_APP_008": {
+    "title": "File System Error",
+    "message": "An error occurred while accessing the file system.",
+    "hint": "Check file permissions and available disk space."
+  },
+  "GMN_CORE_400": {
+    "title": "Bad Request",
+    "message": "The request contains invalid parameters or malformed data.",
+    "hint": "Verify all required fields are present and correctly formatted."
+  },
+  "GMN_CORE_401": {
+    "title": "Unauthorized",
+    "message": "Authentication is required but was not provided or is invalid.",
+    "hint": "Provide valid credentials or authentication token."
+  },
+  "GMN_CORE_403": {
+    "title": "Forbidden",
+    "message": "The request is valid but you do not have permission to access this resource.",
+    "hint": "Check your access permissions or contact an administrator."
+  },
+  "GMN_CORE_404": {
+    "title": "Not Found",
+    "message": "The requested resource could not be found.",
+    "hint": "Verify the resource identifier and try again."
+  },
+  "GMN_CORE_409": {
+    "title": "Conflict",
+    "message": "The request conflicts with the current state of the server.",
+    "hint": "A resource with this identifier may already exist. Try with a different identifier."
+  },
+  "GMN_CORE_422": {
+    "title": "Validation Error",
+    "message": "The request is well-formed but contains semantic errors.",
+    "hint": "Check the validation error details and correct the data."
+  },
+  "GMN_CORE_429": {
+    "title": "Too Many Requests",
+    "message": "Too many requests have been sent in a given time period.",
+    "hint": "Wait before making additional requests or contact support to increase your rate limit."
+  },
+  "GMN_CORE_500": {
+    "title": "Internal Server Error",
+    "message": "An unexpected error occurred while processing the request.",
+    "hint": "Please try again later. If the problem persists, contact support."
+  },
+  "GMN_CORE_501": {
+    "title": "Not Implemented",
+    "message": "The requested functionality has not been implemented yet.",
+    "hint": "Check the documentation or contact support for more information."
+  },
+  "GMN_CORE_502": {
+    "title": "Bad Gateway",
+    "message": "An invalid response was received from an upstream server.",
+    "hint": "Try again later. If the problem persists, contact support."
+  },
+  "GMN_CORE_503": {
+    "title": "Service Unavailable",
+    "message": "The service is temporarily unavailable.",
+    "hint": "Please try again later."
+  }
+}
