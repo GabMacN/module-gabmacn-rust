@@ -20,8 +20,8 @@
 * Path: src/core/mod.rs
 * Name: mod.rs
 * Description: The core module for GabMacN ecosystem. This module provides fundamental
-  functionalities and services that support the overall operation and integration of various
-  components within the GabMacN ecosystem.
+	functionalities and services that support the overall operation and integration of various
+	components within the GabMacN ecosystem.
 */
 
 //use crate::types::core as core_types;

@@ -20,8 +20,8 @@
 * Path: src/modules/nail/types/mod.rs
 * Name: mod.rs
 * Description: Types module within the nail module of GabMacN ecosystem. This module defines
-  various data types and structures used throughout the nail functionalities of the GabMacN
-  ecosystem.
+	various data types and structures used throughout the nail functionalities of the GabMacN
+	ecosystem.
 */
 
 pub mod llms;

@@ -20,7 +20,7 @@
 * Path: src/core/errors/registry.rs
 * Name: registry.rs
 * Description: Manages the error registry for the GabMacN ecosystem,
-  loading error definitions from a JSON file and providing lookup functionality.
+	loading error definitions from a JSON file and providing lookup functionality.
 */
 
 use serde::Deserialize;
@@ -30,9 +30,9 @@ use std::sync::OnceLock;
 // 1. Define the structure of the JSON data
 #[derive(Debug, Deserialize)]
 pub struct ErrorDefinition {
-  pub title: String,
-  pub message: String,
-  pub hint: Option<String>,
+	pub title: String,
+	pub message: String,
+	pub hint: Option<String>,
 }
 
 // 2. Define the Type for the Global Registry
@@ -44,13 +44,13 @@ static ERROR_REGISTRY: OnceLock<Registry> = OnceLock::new();
 // 4. The loading function
 // This reads the JSON file *at compile time* and parses it *at first runtime use*
 fn get_registry() -> &'static Registry {
-  ERROR_REGISTRY.get_or_init(|| {
-    let json_content = include_str!("errors.json"); // Bakes file into binary
-    serde_json::from_str(json_content).expect("Failed to parse errors.json")
-  })
+	ERROR_REGISTRY.get_or_init(|| {
+		let json_content = include_str!("errors.json"); // Bakes file into binary
+		serde_json::from_str(json_content).expect("Failed to parse errors.json")
+	})
 }
 
 // 5. The Public Lookup API
 pub fn get_error_details(code: &str) -> Option<&'static ErrorDefinition> {
-  get_registry().get(code)
+	get_registry().get(code)
 }

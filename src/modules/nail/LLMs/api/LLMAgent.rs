@@ -25,10 +25,10 @@
 use super::super::providers;
 
 pub trait LLMAgent {
-  /// The name of the agent. Merely a human-readable identifier.
-  fn name(&self) -> &str;
+	/// The name of the agent. Merely a human-readable identifier.
+	fn name(&self) -> &str;
 
-  /// The LLM provider associated with this agent.
-  fn llm_provider(&self) -> &Box<dyn providers::LLMProvider>;
-  fn set_llm_provider(&mut self, provider: Box<dyn providers::LLMProvider>);
+	/// The LLM provider associated with this agent.
+	fn llm_provider(&self) -> &Box<dyn providers::LLMProvider>;
+	fn set_llm_provider(&mut self, provider: Box<dyn providers::LLMProvider>);
 }

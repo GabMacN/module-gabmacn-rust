@@ -25,9 +25,19 @@
 use gabmacn::errors::{GMNError, codes};
 
 fn main() {
-  println!("--- Testing Error Output ---");
+	println!("--- Testing Error Output ---");
 
-  let err = GMNError::core(codes::GMNCoreErrorCode::Unknown, None, None);
+	let err = GMNError::core(codes::GMNCoreErrorCode::Unknown, None, None);
+	err.pretty_print();
 
-  err.pretty_print();
+	let custom_error_kind = gabmacn::errors::GMNErrorKind::Custom("GMN_CUSTOM_001");
+	let custom_err = GMNError::custom(
+		custom_error_kind,
+		Some("Custom Error Title"),
+		Some("A custom error description!"),
+		Some("This is a custom error message."),
+		Some("Some Context"),
+	);
+
+	custom_err.pretty_print();
 }

@@ -23,34 +23,34 @@
 */
 
 use super::super::{
-  super::{providers, schemas},
-  LLMAgent,
+	super::{providers, schemas},
+	LLMAgent,
 };
 
 pub struct ChatAgent {
-  /// The name of the agent.
-  name: String,
-  /// The LLM provider associated with this agent.
-  llm_provider: Box<dyn providers::LLMProvider>,
+	/// The name of the agent.
+	name: String,
+	/// The LLM provider associated with this agent.
+	llm_provider: Box<dyn providers::LLMProvider>,
 }
 
 impl ChatAgent {
-  /// Creates a new ChatAgent with the given name and LLM provider.
-  pub fn new(name: String, llm_provider: Box<dyn providers::LLMProvider>) -> Self {
-    Self { name, llm_provider }
-  }
+	/// Creates a new ChatAgent with the given name and LLM provider.
+	pub fn new(name: String, llm_provider: Box<dyn providers::LLMProvider>) -> Self {
+		Self { name, llm_provider }
+	}
 }
 
 impl LLMAgent for ChatAgent {
-  fn name(&self) -> &str {
-    &self.name
-  }
+	fn name(&self) -> &str {
+		&self.name
+	}
 
-  fn llm_provider(&self) -> &Box<dyn providers::LLMProvider> {
-    &self.llm_provider
-  }
+	fn llm_provider(&self) -> &Box<dyn providers::LLMProvider> {
+		&self.llm_provider
+	}
 
-  fn set_llm_provider(&mut self, provider: Box<dyn providers::LLMProvider>) {
-    self.llm_provider = provider;
-  }
+	fn set_llm_provider(&mut self, provider: Box<dyn providers::LLMProvider>) {
+		self.llm_provider = provider;
+	}
 }

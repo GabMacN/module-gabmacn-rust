@@ -20,8 +20,8 @@
 * Path: src/modules/nail/LLMs/mod.rs
 * Name: mod.rs
 * Description: The LLMs (Large Language Models) module within the nail module of GabMacN
-  ecosystem. This module provides functionalities and integrations related to large language
-  models used in AI processing and normalization within the GabMacN ecosystem.
+	ecosystem. This module provides functionalities and integrations related to large language
+	models used in AI processing and normalization within the GabMacN ecosystem.
 */
 
 pub mod api;

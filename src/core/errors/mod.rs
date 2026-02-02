@@ -20,8 +20,8 @@
 * Path: src/core/errors/mod.rs
 * Name: mod.rs
 * Description: The error handling module for the core component of the GabMacN ecosystem.
-  This module defines and manages various error types and handling mechanisms to ensure
-  robust and reliable operation across the core functionalities.
+	This module defines and manages various error types and handling mechanisms to ensure
+	robust and reliable operation across the core functionalities.
 */
 
 // External Crates
@@ -35,8 +35,8 @@ use registry::get_error_details;
 #[allow(non_snake_case)] // Module is used only to extract pretty-print helpers
 mod printPrettyError;
 pub use printPrettyError::{
-  PrettyMessageLevel, pretty_message_to_string, print_pretty_error, print_pretty_info,
-  print_pretty_input, print_pretty_message, print_pretty_success, print_pretty_warning,
+	PrettyMessageLevel, pretty_message_to_string, print_pretty_error, print_pretty_info,
+	print_pretty_input, print_pretty_message, print_pretty_success, print_pretty_warning,
 };
 
 // Error Codes
@@ -51,80 +51,129 @@ pub mod codes;
 // Router Enum
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
 pub enum GMNErrorKind {
-  #[error("Core error: {0:?}")]
-  Core(codes::GMNCoreErrorCode),
+	#[error("Core error: {0:?}")]
+	Core(codes::GMNCoreErrorCode),
+	#[error("Custom error: {0}")]
+	Custom(&'static str),
 }
 
 impl GMNErrorKind {
-  // Routes the request to the correct sub-module to get the JSON key
-  pub fn key(&self) -> &'static str {
-    match self {
-      GMNErrorKind::Core(c) => c.as_key(),
-    }
-  }
+	// Routes the request to the correct sub-module to get the JSON key
+	pub fn key(&self) -> &'static str {
+		match self {
+			GMNErrorKind::Core(c) => c.as_key(),
+			GMNErrorKind::Custom(key) => key,
+		}
+	}
+}
+
+/// Trait for custom error kinds that can be mapped to a registry key.
+/// Implement this on your own enums to integrate with `gmn_expect!`.
+pub trait GMNErrorKey {
+	fn key(&self) -> &'static str;
+}
+
+impl GMNErrorKey for GMNErrorKind {
+	fn key(&self) -> &'static str {
+		self.key()
+	}
 }
 
 #[derive(Debug)]
 pub struct GMNError {
-  pub kind: GMNErrorKind,
-  pub hint: Option<String>,    // Optional hint for resolution
-  pub context: Option<String>, // Dynamic data (filenames, IDs, etc.)
+	pub kind: GMNErrorKind,
+	pub hint: Option<String>,    // Optional hint for resolution
+	pub context: Option<String>, // Dynamic data (filenames, IDs, etc.)
 
-  pub location: String, // Future use: file/line info
+	pub title: Option<String>,
+	pub definition: Option<String>,
+
+	pub location: String, // Future use: file/line info
 }
 
 impl GMNError {
-  // Helper constructor for Core errors
-  #[track_caller]
-  pub fn core(code: codes::GMNCoreErrorCode, hint: Option<&str>, context: Option<&str>) -> Self {
-    let caller = std::panic::Location::caller();
-    Self {
-      kind: GMNErrorKind::Core(code),
-      hint: hint.map(|s| s.into()),
-      context: context.map(|s| s.into()),
-      location: format!("{}:{}:{}", caller.file(), caller.line(), caller.column()),
-    }
-  }
+	// Helper constructor for Core errors
+	#[track_caller]
+	pub fn core(code: codes::GMNCoreErrorCode, hint: Option<&str>, context: Option<&str>) -> Self {
+		let caller = std::panic::Location::caller();
+		Self {
+			kind: GMNErrorKind::Core(code),
+			hint: hint.map(|s| s.into()),
+			context: context.map(|s| s.into()),
+			location: format!("{}:{}:{}", caller.file(), caller.line(), caller.column()),
+			definition: None,
+			title: None,
+		}
+	}
 
-  pub fn pretty_print(&self) {
-    // 1. Ask the nested enums for the JSON key (e.g., "GMN_LLM_001")
-    let key = self.kind.key();
+	// Helper constructor for custom error kinds (external crates can implement GMNErrorKey).
+	#[track_caller]
+	pub fn custom<K: GMNErrorKey>(
+		code: K,
+		title: Option<&str>,
+		definition: Option<&str>,
+		hint: Option<&str>,
+		context: Option<&str>,
+	) -> Self {
+		let caller = std::panic::Location::caller();
+		Self {
+			title: title.map(|s| s.into()),
+			kind: GMNErrorKind::Custom(code.key()),
+			hint: hint.map(|s| s.into()),
+			context: context.map(|s| s.into()),
+			definition: definition.map(|s| s.into()),
+			location: format!("{}:{}:{}", caller.file(), caller.line(), caller.column()),
+		}
+	}
 
-    // 2. Lookup in JSON
-    let def = get_error_details(key).unwrap();
+	pub fn pretty_print(&self) {
+		// 1. Ask the nested enums for the JSON key (e.g., "GMN_LLM_001")
+		let key = self.kind.key();
 
-    // 3. Print
-    print_pretty_error(
-      &def.title,
-      key,
-      &def.message,
-      self.context.as_deref(),
-      self.hint.as_deref().or(def.hint.as_deref()),
-      Some(&self.location),
-    );
-  }
+		// 2. Lookup in JSON
+		if let Some(def) = get_error_details(key) {
+			// 3. Print
+			print_pretty_error(
+				self.title.as_deref().unwrap_or(&def.title),
+				key,
+				self.definition.as_deref().unwrap_or(&def.message),
+				self.context.as_deref(),
+				self.hint.as_deref().or(def.hint.as_deref()),
+				Some(&self.location),
+			);
+		} else {
+			print_pretty_error(
+				self.title.as_deref().unwrap_or("Unnamed Error"),
+				key,
+				self.definition.as_deref().unwrap_or("No error definition found for this key."),
+				self.context.as_deref(),
+				self.hint.as_deref(),
+				Some(&self.location),
+			);
+		}
+	}
 }
 
 impl fmt::Display for GMNError {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    let key = self.kind.key();
-    let Some(def) = get_error_details(key) else {
-      return write!(f, "{}: {:?}", key, self.context);
-    };
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		let key = self.kind.key();
+		let Some(def) = get_error_details(key) else {
+			return write!(f, "{}: {:?}", key, self.context);
+		};
 
-    match pretty_message_to_string(
-      PrettyMessageLevel::Error,
-      &def.title,
-      key,
-      &def.message,
-      self.context.as_deref(),
-      self.hint.as_deref().or(def.hint.as_deref()),
-      Some(&self.location),
-    ) {
-      Ok(rendered) => f.write_str(&rendered),
-      Err(_) => Err(fmt::Error),
-    }
-  }
+		match pretty_message_to_string(
+			PrettyMessageLevel::Error,
+			&def.title,
+			key,
+			&def.message,
+			self.context.as_deref(),
+			self.hint.as_deref().or(def.hint.as_deref()),
+			Some(&self.location),
+		) {
+			Ok(rendered) => f.write_str(&rendered),
+			Err(_) => Err(fmt::Error),
+		}
+	}
 }
 
 impl std::error::Error for GMNError {}
@@ -132,19 +181,25 @@ impl std::error::Error for GMNError {}
 /// Trait implemented by all error-code enums that can be converted into a `GMNError`.
 /// This makes the `gmn_expect!` macro extensible to future namespaces beyond `GMNCore`.
 pub trait IntoGMNError {
-  fn into_gmn_error(self, hint: Option<&str>, context: Option<&str>) -> GMNError;
+	fn into_gmn_error(self, hint: Option<&str>, context: Option<&str>) -> GMNError;
 }
 
 impl IntoGMNError for codes::GMNCoreErrorCode {
-  fn into_gmn_error(self, hint: Option<&str>, context: Option<&str>) -> GMNError {
-    GMNError::core(self, hint, context)
-  }
+	fn into_gmn_error(self, hint: Option<&str>, context: Option<&str>) -> GMNError {
+		GMNError::core(self, hint, context)
+	}
+}
+
+impl<T: GMNErrorKey> IntoGMNError for T {
+	fn into_gmn_error(self, hint: Option<&str>, context: Option<&str>) -> GMNError {
+		GMNError::custom(self, None, None, hint, context)
+	}
 }
 
 impl IntoGMNError for GMNError {
-  fn into_gmn_error(self, _hint: Option<&str>, _context: Option<&str>) -> GMNError {
-    self
-  }
+	fn into_gmn_error(self, _hint: Option<&str>, _context: Option<&str>) -> GMNError {
+		self
+	}
 }
 
 #[macro_export]

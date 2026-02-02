@@ -20,8 +20,8 @@
 * Path: src/modules/nail/mod.rs
 * Name: mod.rs
 * Description: The NAIL or "Normalized AI Layer" module for GabMacN ecosystem. This module
-  provides functionalities related to AI normalization and processing, ensuring consistent
-  AI behavior across different components of the ecosystem.
+	provides functionalities related to AI normalization and processing, ensuring consistent
+	AI behavior across different components of the ecosystem.
 */
 
 #[path = "LLMs/mod.rs"]

@@ -20,9 +20,9 @@
 * Path: src/modules/nail/prelude.rs
 * Name: prelude.rs
 * Description: A prelude module is a common Rust pattern used to re-export frequently used
-  items (such as structs, traits, functions, and macros) from a module or crate. This allows
-  users to import a single prelude module to gain access to a set of commonly used items,
-  simplifying the import process and improving code readability.
+	items (such as structs, traits, functions, and macros) from a module or crate. This allows
+	users to import a single prelude module to gain access to a set of commonly used items,
+	simplifying the import process and improving code readability.
 */
 
 pub use crate::modules::nail::llms::providers::LLMProvider;

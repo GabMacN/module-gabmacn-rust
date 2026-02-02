@@ -20,7 +20,7 @@
 * Path: src/modules/nail/LLMs/providers/ChutesProvider.rs
 * Name: ChutesProvider.rs
 * Description: The ChutesProvider LLMProvider implementation within the LLMs module of the nail
-  module in GabMacN ecosystem.
+	module in GabMacN ecosystem.
 */
 
 use crate::modules::nail::llms::api;
@@ -30,48 +30,48 @@ use super::super::schemas;
 use super::{LLMProvider, LLMProviderCapabilities};
 
 pub struct ChutesLLMProvider {
-  /// "Chutes"
-  name: String,
-  capabilities: LLMProviderCapabilities,
-  schema: schemas::LLMSchema,
+	/// "Chutes"
+	name: String,
+	capabilities: LLMProviderCapabilities,
+	schema: schemas::LLMSchema,
 
-  /// The URL endpoint for the Chutes LLM service.
-  endpoint: String,
+	/// The URL endpoint for the Chutes LLM service.
+	endpoint: String,
 
-  /// The API key for authenticating with the Chutes LLM service. Can only be set at initialization.
-  api_key: String,
+	/// The API key for authenticating with the Chutes LLM service. Can only be set at initialization.
+	api_key: String,
 }
 
 impl ChutesLLMProvider {
-  pub fn new(api_key: String, endpoint: String) -> Self {
-    ChutesLLMProvider {
-      name: "Chutes".to_string(),
-      capabilities: LLMProviderCapabilities::TOOLS,
-      schema: schemas::LLMSchema::Chutes,
-      api_key,
-      endpoint,
-    }
-  }
+	pub fn new(api_key: String, endpoint: String) -> Self {
+		ChutesLLMProvider {
+			name: "Chutes".to_string(),
+			capabilities: LLMProviderCapabilities::TOOLS,
+			schema: schemas::LLMSchema::Chutes,
+			api_key,
+			endpoint,
+		}
+	}
 }
 
 impl LLMProvider for ChutesLLMProvider {
-  fn name(&self) -> &str {
-    &self.name
-  }
+	fn name(&self) -> &str {
+		&self.name
+	}
 
-  fn capabilities(&self) -> &LLMProviderCapabilities {
-    &self.capabilities
-  }
+	fn capabilities(&self) -> &LLMProviderCapabilities {
+		&self.capabilities
+	}
 
-  fn set_capabilities(&mut self, capabilities: LLMProviderCapabilities) {
-    self.capabilities = capabilities;
-  }
+	fn set_capabilities(&mut self, capabilities: LLMProviderCapabilities) {
+		self.capabilities = capabilities;
+	}
 
-  fn schema(&self) -> &schemas::LLMSchema {
-    &self.schema
-  }
+	fn schema(&self) -> &schemas::LLMSchema {
+		&self.schema
+	}
 
-  fn set_schema(&mut self, schema: schemas::LLMSchema) {
-    self.schema = schema;
-  }
+	fn set_schema(&mut self, schema: schemas::LLMSchema) {
+		self.schema = schema;
+	}
 }

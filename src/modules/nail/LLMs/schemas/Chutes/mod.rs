@@ -20,8 +20,8 @@
 * Path: src/modules/nail/LLMs/schemas/Chutes/mod.rs
 * Name: mod.rs
 * Description: Module definitions for the Chutes adapter within the nail module of GabMacN
-  ecosystem. This module defines data structures and types specific to the Chutes LLM
-  adapter, facilitating communication and interaction with the Chutes API.
+	ecosystem. This module defines data structures and types specific to the Chutes LLM
+	adapter, facilitating communication and interaction with the Chutes API.
 */
 
 pub mod types;

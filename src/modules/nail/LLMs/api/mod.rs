@@ -20,7 +20,7 @@
 * Path: src/modules/nail/LLMs/api/mod.rs
 * Name: mod.rs
 * Description: Defines the general API used by the Rust module that is later translated to
-  other schemas by the adapters.
+	other schemas by the adapters.
 */
 
 #[path = "LLMAgent.rs"]

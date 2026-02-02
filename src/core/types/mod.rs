@@ -20,6 +20,6 @@
 * Path: src/core/types/mod.rs
 * Name: mod.rs
 * Description: Types module within the core module of GabMacN ecosystem. This module defines
-  various data types and structures used throughout the core functionalities of the GabMacN
-  ecosystem.
+	various data types and structures used throughout the core functionalities of the GabMacN
+	ecosystem.
 */

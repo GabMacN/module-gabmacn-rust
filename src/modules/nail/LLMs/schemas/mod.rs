@@ -20,17 +20,17 @@
 * Path: src/modules/nail/LLMs/schemas/mod.rs
 * Name: mod.rs
 * Description: The providers module within the LLMs module of the nail module in GabMacN
-  ecosystem. This module provides various adapter implementations to interface with different
-  large language model APIs and services.
+	ecosystem. This module provides various adapter implementations to interface with different
+	large language model APIs and services.
 
-  Adapters serve as bridges between the GabMacN ecosystem and external LLM providers,
-  enabling seamless integration and communication.
+	Adapters serve as bridges between the GabMacN ecosystem and external LLM providers,
+	enabling seamless integration and communication.
 */
 
 /// The supported LLM schemas.
 #[derive(Debug, Clone)]
 pub enum LLMSchema {
-  Chutes,
+	Chutes,
 }
 
 #[path = "Chutes/mod.rs"]
