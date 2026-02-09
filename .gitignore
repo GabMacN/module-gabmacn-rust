@@ -9,3 +9,6 @@
 
 # Env
 *.env
+
+# Trash
+*.trash/**

@@ -1,0 +1,15 @@
+[package]
+name = "gmn"
+version = "0.1.0"
+edition = "2024"
+
+[lints]
+workspace = true
+
+[dependencies]
+gmn_core = { path = "../gmn_core", version = "0.1.0" }
+gmn_nail = { path = "../gmn_nail", version = "0.1.0", optional = true }
+
+[features]
+default = ["nail"]
+nail = ["dep:gmn_nail"]

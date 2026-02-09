@@ -1,0 +1,6 @@
+    Updating crates.io index
+error: no matching package found
+searched package name: `terminal-size`
+perhaps you meant:      terminal_size
+location searched: crates.io index
+required by package `gmn_core v0.1.0 (C:\Assets\Apps\Text Editors\Visual Studio Code\GitHub\module-gabmacn-rust\gmn_core)`
