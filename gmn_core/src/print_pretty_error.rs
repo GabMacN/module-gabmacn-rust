@@ -17,7 +17,7 @@ const MAX_CONTENT_WIDTH: usize = 140;
 const FRAME_MARGIN: usize = 4; // breathing room around content
 const RESET: &str = "\x1b[0m";
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum PrettyMessageLevel {
 	Error,
 	Warning,

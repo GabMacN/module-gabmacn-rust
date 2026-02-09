@@ -64,12 +64,12 @@
 
 // Public modules
 pub mod config;
-pub mod errors;
-pub mod error_display;
-pub mod tracing_setup;
-pub mod instrumentation;
 pub mod domains;
-pub mod printPrettyError;
+pub mod error_display;
+pub mod errors;
+pub mod instrumentation;
+pub mod print_pretty_error;
+pub mod tracing_setup;
 
 // Re-exports for convenience
 pub use errors::{GmnError, Result};
@@ -83,14 +83,14 @@ pub use tracing_setup::{init_tracing, init_tracing_with_config};
 /// use gmn_core::prelude::*;
 /// ```
 pub mod prelude {
-	pub use crate::errors::{GmnError, Result};
-	pub use crate::tracing_setup::{init_tracing, init_tracing_with_config};
 	pub use crate::config::TracingConfig;
 	pub use crate::error_display::display_error;
+	pub use crate::errors::{GmnError, Result};
+	pub use crate::tracing_setup::{init_tracing, init_tracing_with_config};
 
 	// Re-export common tracing macros
 	pub use tracing::{debug, error, info, trace, warn};
 
 	// Re-export instrumentation macros
-	pub use crate::{trace_operation, measure_duration, log_event};
+	pub use crate::{log_event, measure_duration, trace_operation};
 }
