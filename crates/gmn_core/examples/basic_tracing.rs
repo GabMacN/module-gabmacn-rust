@@ -26,11 +26,7 @@ fn main() -> Result<()> {
 	trace!("This is a trace message (usually not shown)");
 
 	// Example with structured fields
-	info!(
-		user_id = 12345,
-		action = "login",
-		"User performed an action"
-	);
+	info!(user_id = 12345, action = "login", "User performed an action");
 
 	// Simulate some work
 	perform_operation();

@@ -5,12 +5,35 @@
 
 use std::fmt;
 
+/// Shared metadata contract for domain errors in `gmn_core`.
+///
+/// This trait exists to reduce boilerplate when exposing code/hint/context from
+/// top-level wrapper errors like [`GmnError`].
+pub trait ErrorMetadata {
+	/// Stable error code for searchability and diagnostics.
+	fn code(&self) -> &'static str;
+
+	/// Optional remediation hint for users/operators.
+	fn hint(&self) -> Option<&str> {
+		None
+	}
+
+	/// Optional additional context details.
+	fn context(&self) -> Option<String> {
+		None
+	}
+}
+
 /// Result type alias for gmn-core operations
 pub type Result<T> = std::result::Result<T, GmnError>;
 
 /// Main error type for the GabMacN core library
 #[derive(Debug, thiserror::Error)]
 pub enum GmnError {
+	/// Generic reusable application errors
+	#[error("Generic error: {0}")]
+	Generic(#[from] GenericError),
+
 	/// Configuration-related errors
 	#[error("Configuration error: {0}")]
 	Config(#[from] ConfigError),
@@ -18,6 +41,10 @@ pub enum GmnError {
 	/// Tracing/logging initialization errors
 	#[error("Tracing error: {0}")]
 	Tracing(#[from] TracingError),
+
+	/// CLI errors
+	#[error("CLI error: {0}")]
+	CLI(#[from] CLIError),
 
 	/// Database-related errors (placeholder for future implementation)
 	#[error("Database error: {0}")]
@@ -44,39 +71,237 @@ impl GmnError {
 	/// Get the error code for this error
 	pub fn code(&self) -> &'static str {
 		match self {
-			Self::Config(e) => e.code(),
-			Self::Tracing(e) => e.code(),
-			Self::Database(e) => e.code(),
-			Self::Auth(e) => e.code(),
-			Self::RateLimit(e) => e.code(),
-			Self::Api(e) => e.code(),
 			Self::Internal(_) => "GMN-000",
+			other => other.metadata().code(),
 		}
 	}
 
 	/// Get a hint for resolving this error, if available
 	pub fn hint(&self) -> Option<&str> {
 		match self {
-			Self::Config(e) => e.hint(),
-			Self::Tracing(e) => e.hint(),
-			Self::Database(e) => e.hint(),
-			Self::Auth(e) => e.hint(),
-			Self::RateLimit(e) => e.hint(),
-			Self::Api(e) => e.hint(),
 			Self::Internal(_) => None,
+			other => other.metadata().hint(),
 		}
 	}
 
 	/// Get additional context for this error, if available
 	pub fn context(&self) -> Option<String> {
 		match self {
-			Self::Config(e) => e.context(),
-			Self::Tracing(e) => e.context(),
-			Self::Database(e) => e.context(),
-			Self::Auth(e) => e.context(),
-			Self::RateLimit(e) => e.context(),
-			Self::Api(e) => e.context(),
 			Self::Internal(_) => None,
+			other => other.metadata().context(),
+		}
+	}
+
+	fn metadata(&self) -> &dyn ErrorMetadata {
+		match self {
+			Self::Generic(e) => e,
+			Self::Config(e) => e,
+			Self::Tracing(e) => e,
+			Self::CLI(e) => e,
+			Self::Database(e) => e,
+			Self::Auth(e) => e,
+			Self::RateLimit(e) => e,
+			Self::Api(e) => e,
+			Self::Internal(_) => unreachable!("internal is handled separately"),
+		}
+	}
+}
+
+// ============================================================================
+// Generic Errors
+// ============================================================================
+
+/// Reusable generic errors for consumers who don't need a dedicated domain type.
+#[derive(Debug, thiserror::Error)]
+pub enum GenericError {
+	/// Requested entity was not found.
+	#[error("Not found: {entity}")]
+	NotFound {
+		/// Entity or resource name.
+		entity: String,
+		/// Optional additional details.
+		message: Option<String>,
+	},
+
+	/// Caller is not authenticated.
+	#[error("Unauthorized: {message}")]
+	Unauthorized {
+		/// Human-readable reason.
+		message: String,
+	},
+
+	/// Caller is authenticated but lacks required permissions.
+	#[error("Forbidden: {message}")]
+	Forbidden {
+		/// Human-readable reason.
+		message: String,
+	},
+
+	/// Input failed validation.
+	#[error("Validation failed: {field}")]
+	Validation {
+		/// Field or logical component.
+		field: String,
+		/// Validation message.
+		message: String,
+	},
+
+	/// Operation conflicts with current resource state.
+	#[error("Conflict: {resource}")]
+	Conflict {
+		/// Resource name.
+		resource: String,
+		/// Optional details.
+		message: Option<String>,
+	},
+
+	/// Downstream or local operation timed out.
+	#[error("Timeout while performing operation: {operation}")]
+	Timeout {
+		/// Operation name.
+		operation: String,
+		/// Optional timeout threshold in milliseconds.
+		timeout_ms: Option<u64>,
+	},
+
+	/// Request exceeds acceptable limits.
+	#[error("Payload too large")]
+	PayloadTooLarge {
+		/// Optional limit in bytes.
+		limit_bytes: Option<u64>,
+	},
+
+	/// Request is not processable due to semantic/business constraints.
+	#[error("Unprocessable entity: {message}")]
+	UnprocessableEntity {
+		/// Human-readable reason.
+		message: String,
+	},
+
+	/// Unsupported operation/type/feature.
+	#[error("Unsupported operation: {operation}")]
+	Unsupported {
+		/// Unsupported operation name.
+		operation: String,
+		/// Optional details.
+		message: Option<String>,
+	},
+
+	/// Service or dependency is unavailable.
+	#[error("Service unavailable: {service}")]
+	ServiceUnavailable {
+		/// Service/dependency name.
+		service: String,
+		/// Optional details.
+		message: Option<String>,
+	},
+
+	/// Catch-all generic error.
+	#[error("{message}")]
+	Other {
+		/// Human-readable message.
+		message: String,
+	},
+}
+
+impl ErrorMetadata for GenericError {
+	fn code(&self) -> &'static str {
+		match self {
+			Self::NotFound { .. } => "GMN-GEN-001",
+			Self::Unauthorized { .. } => "GMN-GEN-002",
+			Self::Forbidden { .. } => "GMN-GEN-003",
+			Self::Validation { .. } => "GMN-GEN-004",
+			Self::Conflict { .. } => "GMN-GEN-005",
+			Self::Timeout { .. } => "GMN-GEN-006",
+			Self::PayloadTooLarge { .. } => "GMN-GEN-007",
+			Self::UnprocessableEntity { .. } => "GMN-GEN-008",
+			Self::Unsupported { .. } => "GMN-GEN-009",
+			Self::ServiceUnavailable { .. } => "GMN-GEN-010",
+			Self::Other { .. } => "GMN-GEN-011",
+		}
+	}
+
+	fn hint(&self) -> Option<&str> {
+		match self {
+			Self::NotFound { .. } => {
+				Some("Check whether the resource exists and verify the identifier/path")
+			}
+			Self::Unauthorized { .. } => {
+				Some("Authenticate and provide valid credentials before retrying")
+			}
+			Self::Forbidden { .. } => {
+				Some("Ensure your account/token has the required permissions")
+			}
+			Self::Validation { .. } => Some("Fix the invalid field values and retry the request"),
+			Self::Conflict { .. } => {
+				Some("Refresh state and retry, or resolve the conflicting resource changes")
+			}
+			Self::Timeout { .. } => Some(
+				"Retry with backoff or increase timeout if the operation is expected to take longer",
+			),
+			Self::PayloadTooLarge { .. } => {
+				Some("Reduce payload size, split the request, or increase server-side limits")
+			}
+			Self::UnprocessableEntity { .. } => {
+				Some("Adjust request semantics to satisfy business rules")
+			}
+			Self::Unsupported { .. } => {
+				Some("Use a supported operation/format or upgrade to a compatible version")
+			}
+			Self::ServiceUnavailable { .. } => {
+				Some("Retry later; dependency may be degraded or under maintenance")
+			}
+			Self::Other { .. } => None,
+		}
+	}
+
+	fn context(&self) -> Option<String> {
+		match self {
+			Self::NotFound { entity, message } => {
+				let mut ctx = format!("entity={}", entity);
+				if let Some(msg) = message {
+					ctx.push_str(&format!(", details={}", msg));
+				}
+				Some(ctx)
+			}
+			Self::Unauthorized { message } => Some(format!("details={}", message)),
+			Self::Forbidden { message } => Some(format!("details={}", message)),
+			Self::Validation { field, message } => {
+				Some(format!("field={}, details={}", field, message))
+			}
+			Self::Conflict { resource, message } => {
+				let mut ctx = format!("resource={}", resource);
+				if let Some(msg) = message {
+					ctx.push_str(&format!(", details={}", msg));
+				}
+				Some(ctx)
+			}
+			Self::Timeout { operation, timeout_ms } => {
+				let mut ctx = format!("operation={}", operation);
+				if let Some(ms) = timeout_ms {
+					ctx.push_str(&format!(", timeout_ms={}", ms));
+				}
+				Some(ctx)
+			}
+			Self::PayloadTooLarge { limit_bytes } => {
+				limit_bytes.map(|b| format!("limit_bytes={}", b))
+			}
+			Self::UnprocessableEntity { message } => Some(format!("details={}", message)),
+			Self::Unsupported { operation, message } => {
+				let mut ctx = format!("operation={}", operation);
+				if let Some(msg) = message {
+					ctx.push_str(&format!(", details={}", msg));
+				}
+				Some(ctx)
+			}
+			Self::ServiceUnavailable { service, message } => {
+				let mut ctx = format!("service={}", service);
+				if let Some(msg) = message {
+					ctx.push_str(&format!(", details={}", msg));
+				}
+				Some(ctx)
+			}
+			Self::Other { message } => Some(format!("details={}", message)),
 		}
 	}
 }
@@ -122,7 +347,7 @@ pub enum ConfigError {
 	},
 }
 
-impl ConfigError {
+impl ErrorMetadata for ConfigError {
 	fn code(&self) -> &'static str {
 		match self {
 			Self::InvalidLogLevel { .. } => "GMN-CFG-001",
@@ -134,12 +359,10 @@ impl ConfigError {
 
 	fn hint(&self) -> Option<&str> {
 		match self {
-			Self::InvalidLogLevel { .. } => {
-				Some("Valid log levels: trace, debug, info, warn, error. You can also use directive syntax like 'gmn_core=debug,hyper=info'")
-			}
-			Self::InvalidLogFormat { .. } => {
-				Some("Valid formats: pretty, compact, json")
-			}
+			Self::InvalidLogLevel { .. } => Some(
+				"Valid log levels: trace, debug, info, warn, error. You can also use directive syntax like 'gmn_core=debug,hyper=info'",
+			),
+			Self::InvalidLogFormat { .. } => Some("Valid formats: pretty, compact, json"),
 			Self::InvalidOutputPath { .. } => {
 				Some("Ensure the directory exists and you have write permissions")
 			}
@@ -192,7 +415,7 @@ pub enum TracingError {
 	},
 }
 
-impl TracingError {
+impl ErrorMetadata for TracingError {
 	fn code(&self) -> &'static str {
 		match self {
 			Self::AlreadyInitialized => "GMN-TRC-001",
@@ -203,9 +426,9 @@ impl TracingError {
 
 	fn hint(&self) -> Option<&str> {
 		match self {
-			Self::AlreadyInitialized => {
-				Some("Tracing can only be initialized once. Call init_tracing() early in your application startup.")
-			}
+			Self::AlreadyInitialized => Some(
+				"Tracing can only be initialized once. Call init_tracing() early in your application startup.",
+			),
 			Self::FileCreationFailed { .. } => {
 				Some("Ensure the log directory exists and you have write permissions")
 			}
@@ -217,10 +440,59 @@ impl TracingError {
 
 	fn context(&self) -> Option<String> {
 		match self {
-			Self::FileCreationFailed { path, .. } => {
-				Some(format!("Log file path: {}", path))
-			}
+			Self::FileCreationFailed { path, .. } => Some(format!("Log file path: {}", path)),
 			_ => None,
+		}
+	}
+}
+
+// ============================================================================
+// CLI Errors
+// ============================================================================
+
+/// CLI-related errors
+#[derive(Debug, thiserror::Error)]
+pub enum CLIError {
+	/// Fetch error
+	#[error("Failed to fetch CLI input: {message}")]
+	FetchError {
+		/// The underlying error message
+		message: String,
+	},
+
+	/// Operation cancelled by user
+	#[error("Operation cancelled by user")]
+	Cancelled {
+		/// The underlying error message
+		message: Option<String>,
+	},
+}
+
+impl ErrorMetadata for CLIError {
+	fn code(&self) -> &'static str {
+		match self {
+			Self::FetchError { .. } => "GMN-CLI-001",
+			Self::Cancelled { .. } => "GMN-CLI-002",
+		}
+	}
+
+	fn hint(&self) -> Option<&str> {
+		match self {
+			Self::FetchError { .. } => {
+				Some("This error occurs when the prompt fails to read input")
+			}
+			Self::Cancelled { .. } => {
+				Some("The user cancelled the operation, no further action needed")
+			}
+		}
+	}
+
+	fn context(&self) -> Option<String> {
+		match self {
+			Self::FetchError { message } => Some(format!("Underlying error: {}", message)),
+			Self::Cancelled { message } => {
+				message.as_ref().map(|m| format!("Cancellation message: {}", m))
+			}
 		}
 	}
 }
@@ -252,7 +524,7 @@ impl fmt::Display for DatabaseError {
 
 impl std::error::Error for DatabaseError {}
 
-impl DatabaseError {
+impl ErrorMetadata for DatabaseError {
 	fn code(&self) -> &'static str {
 		match self {
 			Self::ConnectionFailed(_) => "GMN-DB-001",
@@ -263,14 +535,12 @@ impl DatabaseError {
 
 	fn hint(&self) -> Option<&str> {
 		match self {
-			Self::ConnectionFailed(_) => Some("Check database connection string and network connectivity"),
+			Self::ConnectionFailed(_) => {
+				Some("Check database connection string and network connectivity")
+			}
 			Self::QueryFailed(_) => Some("Verify query syntax and database schema"),
 			Self::TransactionFailed(_) => Some("Check for conflicts or constraint violations"),
 		}
-	}
-
-	fn context(&self) -> Option<String> {
-		None
 	}
 }
 
@@ -301,7 +571,7 @@ impl fmt::Display for AuthError {
 
 impl std::error::Error for AuthError {}
 
-impl AuthError {
+impl ErrorMetadata for AuthError {
 	fn code(&self) -> &'static str {
 		match self {
 			Self::InvalidCredentials => "GMN-AUTH-001",
@@ -316,10 +586,6 @@ impl AuthError {
 			Self::TokenExpired => Some("Refresh your authentication token"),
 			Self::InsufficientPermissions => Some("Contact administrator for required permissions"),
 		}
-	}
-
-	fn context(&self) -> Option<String> {
-		None
 	}
 }
 
@@ -350,7 +616,7 @@ impl fmt::Display for RateLimitError {
 
 impl std::error::Error for RateLimitError {}
 
-impl RateLimitError {
+impl ErrorMetadata for RateLimitError {
 	fn code(&self) -> &'static str {
 		"GMN-RATE-001"
 	}
@@ -360,10 +626,7 @@ impl RateLimitError {
 	}
 
 	fn context(&self) -> Option<String> {
-		Some(format!(
-			"Requests: {}/{} in {} seconds",
-			self.requests, self.limit, self.window_secs
-		))
+		Some(format!("Requests: {}/{} in {} seconds", self.requests, self.limit, self.window_secs))
 	}
 }
 
@@ -379,7 +642,12 @@ pub enum ApiError {
 	/// Invalid response
 	InvalidResponse(String),
 	/// Server error
-	ServerError { status: u16, message: String },
+	ServerError {
+		/// HTTP status code
+		status: u16,
+		/// Error message from server
+		message: String,
+	},
 }
 
 impl fmt::Display for ApiError {
@@ -396,7 +664,7 @@ impl fmt::Display for ApiError {
 
 impl std::error::Error for ApiError {}
 
-impl ApiError {
+impl ErrorMetadata for ApiError {
 	fn code(&self) -> &'static str {
 		match self {
 			Self::NetworkError(_) => "GMN-API-001",

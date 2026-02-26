@@ -32,8 +32,8 @@
 //! Configure tracing using environment variables or programmatically:
 //!
 //! ```no_run
-//! use gmn_core::config::TracingConfig;
-//! use gmn_core::tracing_setup::init_tracing_with_config;
+//! use gmn_core::tracing::TracingConfig;
+//! use gmn_core::tracing::init_tracing_with_config;
 //!
 //! fn main() -> gmn_core::Result<()> {
 //!     let config = TracingConfig::development();
@@ -63,17 +63,16 @@
 //! ```
 
 // Public modules
-pub mod config;
-pub mod domains;
+pub mod domain;
 pub mod error_display;
 pub mod errors;
-pub mod instrumentation;
 pub mod print_pretty_error;
-pub mod tracing_setup;
+pub mod prompt;
+pub mod tracing;
 
 // Re-exports for convenience
 pub use errors::{GmnError, Result};
-pub use tracing_setup::{init_tracing, init_tracing_with_config};
+pub use tracing::{init_tracing, init_tracing_with_config};
 
 /// Prelude module for convenient imports
 ///
@@ -83,10 +82,11 @@ pub use tracing_setup::{init_tracing, init_tracing_with_config};
 /// use gmn_core::prelude::*;
 /// ```
 pub mod prelude {
-	pub use crate::config::TracingConfig;
 	pub use crate::error_display::display_error;
 	pub use crate::errors::{GmnError, Result};
-	pub use crate::tracing_setup::{init_tracing, init_tracing_with_config};
+	pub use crate::tracing::{TracingConfig, init_tracing, init_tracing_with_config};
+
+	pub use crate::prompt::Prompter;
 
 	// Re-export common tracing macros
 	pub use tracing::{debug, error, info, trace, warn};

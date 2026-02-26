@@ -10,8 +10,10 @@ pub enum RateLimitResult {
 	/// Request allowed
 	Allowed,
 	/// Request denied (rate limit exceeded)
+	#[allow(dead_code)]
 	Denied,
 	/// Rate limit check skipped
+	#[allow(dead_code)]
 	Skipped,
 }
 
@@ -41,6 +43,7 @@ pub fn rate_limit_check_span(resource: &str, identifier: &str) -> Span {
 }
 
 /// Create a span for rate limit configuration
+#[allow(dead_code)]
 pub fn rate_limit_config_span(resource: &str) -> Span {
 	tracing::info_span!(
 		"rate_limit_config",
@@ -67,6 +70,7 @@ pub fn record_check_result(
 }
 
 /// Record rate limit configuration
+#[allow(dead_code)]
 pub fn record_config(span: &Span, limit: u32, window_secs: u64) {
 	span.record("limit", limit);
 	span.record("window_secs", window_secs);

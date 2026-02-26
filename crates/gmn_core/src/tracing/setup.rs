@@ -6,10 +6,10 @@
 //! The implementation uses helper functions to avoid exponential match growth
 //! while maintaining type safety and avoiding unnecessary boxing overhead.
 
-use crate::config::{LogFormat, LogOutput, TracingConfig};
+use super::config::{LogFormat, LogOutput, TracingConfig};
 use crate::errors::{Result, TracingError};
 use std::sync::atomic::{AtomicBool, Ordering};
-use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
+use tracing_subscriber::{EnvFilter, Layer, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 /// Global flag to track if tracing has been initialized
 static TRACING_INITIALIZED: AtomicBool = AtomicBool::new(false);
@@ -30,7 +30,7 @@ static TRACING_INITIALIZED: AtomicBool = AtomicBool::new(false);
 /// # Example
 ///
 /// ```no_run
-/// use gmn_core::tracing_setup::init_tracing;
+/// use gmn_core::tracing::init_tracing;
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     init_tracing()?;
@@ -58,8 +58,8 @@ pub fn init_tracing() -> Result<()> {
 /// # Example
 ///
 /// ```no_run
-/// use gmn_core::tracing_setup::init_tracing_with_config;
-/// use gmn_core::config::TracingConfig;
+/// use gmn_core::tracing::init_tracing_with_config;
+/// use gmn_core::tracing::TracingConfig;
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let config = TracingConfig::development();
@@ -214,11 +214,7 @@ fn init_both(
 	// File layer always uses JSON for structured logging
 	let file_layer = fmt::layer().with_writer(file_appender).json();
 
-	tracing_subscriber::registry()
-		.with(env_filter)
-		.with(console_layer)
-		.with(file_layer)
-		.init();
+	tracing_subscriber::registry().with(env_filter).with(console_layer).with(file_layer).init();
 }
 
 /// Check if tracing has been initialized

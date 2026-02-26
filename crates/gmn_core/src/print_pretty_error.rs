@@ -1,6 +1,110 @@
-//! A Rust library for printing beautifully formatted error messages in the terminal.
-//! This library provides a simple API to display errors, warnings, info, success messages, and input prompts
-//! with rich formatting, including colors, icons, timestamps, and contextual information.
+//! Pretty terminal message rendering utilities for errors and status output.
+//!
+//! This module provides a small, focused API for rendering structured terminal messages
+//! with a consistent visual style (borders, colors, icons, timestamp, and optional
+//! sections like context/hints).
+//!
+//! It is intended for human-facing CLI output where readability matters.
+//!
+//! # What this module gives you
+//!
+//! - A single generic entry point: [`print_pretty_message`]
+//! - Convenience wrappers by level:
+//!   - [`print_pretty_error`]
+//!   - [`print_pretty_warning`]
+//!   - [`print_pretty_info`]
+//!   - [`print_pretty_success`]
+//!   - [`print_pretty_input`]
+//! - A string-rendering function for tests/snapshots/log piping:
+//!   - [`pretty_message_to_string`]
+//!
+//! # Message model
+//!
+//! Every rendered message is composed of:
+//!
+//! - **level**: visual profile (icon + color + label)
+//! - **title**: short, high-signal headline
+//! - **code**: stable short identifier (`AUTH-401`, `DB-003`, etc.)
+//! - **message**: primary body text
+//! - **context** *(optional)*: additional surrounding detail
+//! - **hint** *(optional)*: actionable next step for the user
+//! - **location** *(optional)*: source/function/path indicator
+//!
+//! # Output behavior
+//!
+//! - Printed output goes to **stderr** (not stdout).
+//! - Width is auto-computed and constrained by terminal width when available.
+//! - Content is wrapped to stay readable in narrow terminals.
+//! - ANSI styling is used for terminals that support color.
+//! - The printing API intentionally does not return an error; rendering failures are
+//!   treated as best-effort display concerns.
+//!
+//! # Usage examples
+//!
+//! Basic error:
+//!
+//! ```rust,no_run
+//! use gmn_core::print_pretty_error::print_pretty_error;
+//!
+//! print_pretty_error(
+//!     "Authentication Failed",
+//!     "AUTH-401",
+//!     "The provided token is invalid or expired.",
+//!     Some("Attempted to access protected route: /v1/account/profile"),
+//!     Some("Refresh the token and retry the request."),
+//!     Some("auth::middleware::verify_token"),
+//! );
+//! ```
+//!
+//! Generic level-driven message:
+//!
+//! ```rust,no_run
+//! use gmn_core::print_pretty_error::{print_pretty_message, PrettyMessageLevel};
+//!
+//! print_pretty_message(
+//!     PrettyMessageLevel::Info,
+//!     "Cache Warmup",
+//!     "CACHE-INIT",
+//!     "Preloading 42 templates into memory.",
+//!     None,
+//!     None,
+//!     Some("startup::cache"),
+//! );
+//! ```
+//!
+//! Render to string for testing/snapshots:
+//!
+//! ```rust
+//! use gmn_core::print_pretty_error::{pretty_message_to_string, PrettyMessageLevel};
+//!
+//! let rendered = pretty_message_to_string(
+//!     PrettyMessageLevel::Success,
+//!     "Build Finished",
+//!     "BUILD-OK",
+//!     "All artifacts were generated successfully.",
+//!     None,
+//!     Some("Run `cargo test` to validate behavior."),
+//!     Some("ci::build"),
+//! ).expect("message should render");
+//!
+//! assert!(rendered.contains("SUCCESS"));
+//! assert!(rendered.contains("BUILD-OK"));
+//! ```
+//!
+//! # Choosing good message values
+//!
+//! - Keep **title** short (`"Validation Failed"`), not paragraph-length.
+//! - Keep **code** stable and machine-searchable.
+//! - Keep **message** user-centered and specific.
+//! - Use **context** for situational details.
+//! - Use **hint** for actionable next steps.
+//! - Use **location** to aid maintainers/debuggers.
+//!
+//! # Notes for library integrators
+//!
+//! If you already have a richer domain error type, map it into this message model close
+//! to your boundary layer (CLI / API adapter / service shell). This keeps domain logic
+//! independent of terminal formatting concerns.
 //!
 //! **Author:** @gabmacn
 
@@ -8,8 +112,8 @@ use chrono::Local;
 use colored::*; // Keep for user content styling
 use std::io::{self, Write};
 use terminal_size::{Height, Width, terminal_size};
-use textwrap::Options;
 use unicode_width::UnicodeWidthChar;
+use wrap_ansi::{WrapOptions, wrap_ansi};
 
 // CONSTANTS
 const MIN_CONTENT_WIDTH: usize = 40;
@@ -17,12 +121,34 @@ const MAX_CONTENT_WIDTH: usize = 140;
 const FRAME_MARGIN: usize = 4; // breathing room around content
 const RESET: &str = "\x1b[0m";
 
+/// Semantic message level used to select styling and label.
+///
+/// This enum controls:
+///
+/// - border color
+/// - icon glyph
+/// - level label text
+///
+/// It does **not** change the structural layout; all levels share the same layout.
+///
+/// # Variants
+///
+/// - [`PrettyMessageLevel::Error`]: fatal/problem state
+/// - [`PrettyMessageLevel::Warning`]: recoverable issue
+/// - [`PrettyMessageLevel::Info`]: neutral informational update
+/// - [`PrettyMessageLevel::Success`]: positive completion/confirmation
+/// - [`PrettyMessageLevel::Input`]: prompt-like interaction context
 #[derive(Clone, Copy, Debug)]
 pub enum PrettyMessageLevel {
+	/// Use for fatal conditions, failed operations, validation errors, or anything that should stand out immediately.
 	Error,
+	/// Use for non-fatal issues where execution may continue.
 	Warning,
+	/// Use for neutral, operator-friendly progress or status updates.
 	Info,
+	/// Use for successful completion messages and positive confirmations.
 	Success,
+	///
 	Input,
 }
 
@@ -190,8 +316,18 @@ fn compute_content_width(
 	desired.clamp(MIN_CONTENT_WIDTH, MAX_CONTENT_WIDTH).min(term_cap.max(MIN_CONTENT_WIDTH))
 }
 
-/// OPTIMIZATION 1: Manual ANSI Stripping (Zero Allocation)
-/// Replaces Regex. Iterates bytes to count visible characters, skipping CSI sequences.
+/// Measure visible display width of a potentially ANSI-styled string.
+///
+/// This function walks characters and ignores terminal CSI color sequences
+/// (`\x1b[...m`) while counting printable width, using Unicode display width rules.
+///
+/// It is used to:
+///
+/// - align borders correctly
+/// - compute horizontal padding
+/// - avoid visual drift when color codes are present
+///
+/// The implementation is allocation-free and optimized for hot rendering paths.
 fn visible_len(s: &str) -> usize {
 	let mut len = 0;
 	let mut in_esc = false;
@@ -215,8 +351,9 @@ fn visible_len(s: &str) -> usize {
 	len
 }
 
-/// OPTIMIZATION 2: Zero-Allocation Padding
-/// Writes a slice of the static SPACES string directly to the buffer.
+/// Write `width` spaces into the provided writer without allocating a new string.
+///
+/// Uses a static reusable buffer chunk and writes it repeatedly.
 fn write_padding(w: &mut impl Write, width: usize) -> io::Result<()> {
 	let mut remaining = width;
 	while remaining > 0 {
@@ -331,30 +468,50 @@ fn render_pretty_message(
 
 	draw!(draw_horizontal_line, false);
 
-	let wrap_opts = Options::new(content_width.saturating_sub(4).max(10));
+	// Setup ANSI-aware wrapping options
+	let wrap_opts = WrapOptions::builder().word_wrap(true).hard_wrap(false).build();
+	let wrap_width = content_width.saturating_sub(4).max(10);
+
 	draw!(draw_row, "");
 
-	for line in textwrap::wrap(message, &wrap_opts) {
-		draw!(draw_row, &format!("  {}", line.white()));
+	// 1. Wrap the main message
+	let wrapped_message = wrap_ansi(message, wrap_width, Some(wrap_opts.clone()));
+	for line in wrapped_message.lines() {
+		draw!(draw_row, &format!("  {}", line));
 	}
 
 	draw!(draw_row, "");
 
+	// 2. Wrap the context
 	if let Some(ctx) = context {
 		draw!(draw_row, &format!("  {}", "CONTEXT:".truecolor(100, 100, 100)));
-		for line in textwrap::wrap(ctx, &wrap_opts) {
-			draw!(draw_row, &format!("  {}", line.italic().truecolor(150, 150, 150)));
+
+		// Apply the default style FIRST. wrap_ansi will distribute it across lines.
+		// If the user passed their own colors, their inner codes will override this!
+		let default_ctx = ctx.italic().truecolor(150, 150, 150).to_string();
+		let wrapped_context = wrap_ansi(&default_ctx, wrap_width, Some(wrap_opts.clone()));
+
+		for line in wrapped_context.lines() {
+			// Print it raw! Let the embedded ANSI do the talking.
+			draw!(draw_row, &format!("  {}", line));
 		}
 		draw!(draw_row, "");
 	}
 
+	// 3. Wrap the hint
 	if let Some(h) = hint {
 		draw!(draw_horizontal_line, false);
 		draw!(draw_row, &format!("  {}", "➜  HINT".yellow().bold()));
 
-		let hint_wrap_opts = Options::new(content_width - 6);
-		for line in textwrap::wrap(h, &hint_wrap_opts) {
-			draw!(draw_row, &format!("     {}", line.yellow()));
+		let hint_wrap_width = content_width.saturating_sub(6).max(10);
+
+		// Default yellow.
+		let default_hint = h.yellow().to_string();
+		let wrapped_hint = wrap_ansi(&default_hint, hint_wrap_width, Some(wrap_opts));
+
+		for line in wrapped_hint.lines() {
+			// Print it raw!
+			draw!(draw_row, &format!("     {}", line));
 		}
 	}
 
@@ -366,7 +523,46 @@ fn render_pretty_message(
 	Ok(())
 }
 
-/// The print_pretty_message function is the main entry point for printing a formatted message to stderr. It takes the message level, title, code, main message, optional context, hint, and location information. It computes the necessary content width based on the inputs and terminal size, then renders the message using the appropriate frame style. The output is flushed to ensure it appears immediately in the terminal.
+/// Print a fully formatted pretty message to **stderr**.
+///
+/// This is the primary API for message rendering when you want to choose the level
+/// dynamically.
+///
+/// ## Parameters
+///
+/// - `level`: visual level profile (error/warn/info/success/input)
+/// - `title`: concise message headline
+/// - `code`: stable short code for searching/correlation
+/// - `message`: primary body text
+/// - `context`: optional contextual details block
+/// - `hint`: optional action-oriented hint block
+/// - `location`: optional source/location line
+///
+/// ## Behavior
+///
+/// - Computes an adaptive width from content and terminal size.
+/// - Wraps body/context/hint text to fit.
+/// - Emits to stderr using a buffered writer and flushes before return.
+///
+/// ## Return value
+///
+/// Returns `()` and intentionally swallows rendering I/O errors (best-effort UX path).
+///
+/// ## Example
+///
+/// ```rust,no_run
+/// use gmn_core::print_pretty_error::{print_pretty_message, PrettyMessageLevel};
+///
+/// print_pretty_message(
+///     PrettyMessageLevel::Warning,
+///     "Configuration Missing",
+///     "CFG-001",
+///     "No config file was found in the default location.",
+///     Some("Looked in: ./config.toml and ~/.config/myapp/config.toml"),
+///     Some("Create a config file or pass --config <path>."),
+///     Some("bootstrap::load_config"),
+/// );
+/// ```
 pub fn print_pretty_message(
 	level: PrettyMessageLevel,
 	title: &str,
@@ -395,6 +591,37 @@ pub fn print_pretty_message(
 	let _ = handle.flush();
 }
 
+/// Render a pretty message into a `String` instead of writing to stderr.
+///
+/// Useful for:
+///
+/// - tests and snapshot assertions
+/// - storing formatted terminal output
+/// - forwarding formatted text to alternate sinks
+///
+/// ## Errors
+///
+/// Returns [`io::Error`] if rendering fails, or if UTF-8 conversion from the internal
+/// byte buffer fails.
+///
+/// ## Example
+///
+/// ```rust
+/// use gmn_core::print_pretty_error::{pretty_message_to_string, PrettyMessageLevel};
+///
+/// let text = pretty_message_to_string(
+///     PrettyMessageLevel::Info,
+///     "Server",
+///     "SRV-200",
+///     "HTTP server is listening on 127.0.0.1:3000.",
+///     None,
+///     None,
+///     Some("main"),
+/// ).expect("should render");
+///
+/// assert!(text.contains("INFO"));
+/// assert!(text.contains("SRV-200"));
+/// ```
 pub fn pretty_message_to_string(
 	level: PrettyMessageLevel,
 	title: &str,
@@ -422,6 +649,25 @@ pub fn pretty_message_to_string(
 	String::from_utf8(buffer).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))
 }
 
+/// Convenience wrapper for [`PrettyMessageLevel::Error`].
+///
+/// Use this for fatal conditions, failed operations, validation errors, or anything
+/// that should stand out immediately.
+///
+/// ## Example
+///
+/// ```rust,no_run
+/// use gmn_core::print_pretty_error::print_pretty_error;
+///
+/// print_pretty_error(
+///     "Payment Failed",
+///     "PAY-402",
+///     "Unable to charge the selected payment method.",
+///     Some("Gateway returned status: declined"),
+///     Some("Ask the user to verify card details or choose another method."),
+///     Some("billing::charge"),
+/// );
+/// ```
 pub fn print_pretty_error(
 	title: &str,
 	code: &str,
@@ -433,6 +679,24 @@ pub fn print_pretty_error(
 	print_pretty_message(PrettyMessageLevel::Error, title, code, message, context, hint, location);
 }
 
+/// Convenience wrapper for [`PrettyMessageLevel::Warning`].
+///
+/// Use this for non-fatal issues where execution may continue.
+///
+/// ## Example
+///
+/// ```rust,no_run
+/// use gmn_core::print_pretty_error::print_pretty_warning;
+///
+/// print_pretty_warning(
+///     "Retrying Request",
+///     "NET-RETRY",
+///     "Initial request timed out. Retrying with backoff.",
+///     Some("Attempt 2 of 5"),
+///     None,
+///     Some("network::client"),
+/// );
+/// ```
 pub fn print_pretty_warning(
 	title: &str,
 	code: &str,
@@ -452,6 +716,9 @@ pub fn print_pretty_warning(
 	);
 }
 
+/// Convenience wrapper for [`PrettyMessageLevel::Info`].
+///
+/// Use this for neutral, operator-friendly progress or status updates.
 pub fn print_pretty_info(
 	title: &str,
 	code: &str,
@@ -463,6 +730,9 @@ pub fn print_pretty_info(
 	print_pretty_message(PrettyMessageLevel::Info, title, code, message, context, hint, location);
 }
 
+/// Convenience wrapper for [`PrettyMessageLevel::Success`].
+///
+/// Use this for successful completion messages and positive confirmations.
 pub fn print_pretty_success(
 	title: &str,
 	code: &str,
@@ -482,6 +752,9 @@ pub fn print_pretty_success(
 	);
 }
 
+/// Convenience wrapper for [`PrettyMessageLevel::Input`].
+///
+/// Use this level when displaying prompt-adjacent guidance or expected user input.
 pub fn print_pretty_input(
 	title: &str,
 	code: &str,

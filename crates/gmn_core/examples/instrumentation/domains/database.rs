@@ -10,18 +10,25 @@ pub enum DbOperation {
 	/// SELECT query
 	Select,
 	/// INSERT query
+	#[allow(dead_code)]
 	Insert,
 	/// UPDATE query
+	#[allow(dead_code)]
 	Update,
 	/// DELETE query
+	#[allow(dead_code)]
 	Delete,
 	/// Transaction begin
+	#[allow(dead_code)]
 	BeginTransaction,
 	/// Transaction commit
+	#[allow(dead_code)]
 	CommitTransaction,
 	/// Transaction rollback
+	#[allow(dead_code)]
 	RollbackTransaction,
 	/// Connection pool operation
+	#[allow(dead_code)]
 	PoolOperation,
 }
 
@@ -53,6 +60,7 @@ pub fn query_span(operation: DbOperation, table: &str) -> Span {
 }
 
 /// Create a span for a database transaction
+#[allow(dead_code)]
 pub fn transaction_span(operation: DbOperation) -> Span {
 	tracing::info_span!(
 		"db_transaction",
@@ -62,6 +70,7 @@ pub fn transaction_span(operation: DbOperation) -> Span {
 }
 
 /// Create a span for connection pool operations
+#[allow(dead_code)]
 pub fn pool_span(operation: &str) -> Span {
 	tracing::info_span!(
 		"db_pool",
@@ -78,6 +87,7 @@ pub fn record_query_metrics(span: &Span, rows_affected: u64, duration_ms: u64) {
 }
 
 /// Record connection pool metrics
+#[allow(dead_code)]
 pub fn record_pool_metrics(span: &Span, active: u32, idle: u32) {
 	span.record("active_connections", active);
 	span.record("idle_connections", idle);

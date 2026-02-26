@@ -10,18 +10,25 @@ pub enum AuthOperation {
 	/// User login
 	Login,
 	/// User logout
+	#[allow(dead_code)]
 	Logout,
 	/// Token validation
+	#[allow(dead_code)]
 	ValidateToken,
 	/// Token refresh
+	#[allow(dead_code)]
 	RefreshToken,
 	/// Session creation
+	#[allow(dead_code)]
 	CreateSession,
 	/// Session validation
+	#[allow(dead_code)]
 	ValidateSession,
 	/// Session termination
+	#[allow(dead_code)]
 	TerminateSession,
 	/// API key validation
+	#[allow(dead_code)]
 	ValidateApiKey,
 }
 
@@ -62,6 +69,7 @@ pub fn auth_span(operation: AuthOperation, user_id: Option<&str>) -> Span {
 }
 
 /// Create a span for session operations
+#[allow(dead_code)]
 pub fn session_span(operation: AuthOperation, session_id: &str) -> Span {
 	tracing::info_span!(
 		"session_operation",

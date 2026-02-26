@@ -7,9 +7,11 @@
 //! cargo run --example error_handling
 //! ```
 
+use gmn_core::error_display::{
+	DisplayMessage, display_error, display_info, display_success, display_warning,
+};
+use gmn_core::errors::{AuthError, ConfigError, DatabaseError, TracingError};
 use gmn_core::prelude::*;
-use gmn_core::error_display::{display_error, display_warning, display_info, display_success};
-use gmn_core::errors::{ConfigError, TracingError, DatabaseError, AuthError};
 
 fn main() -> Result<()> {
 	// Initialize tracing
@@ -38,10 +40,8 @@ fn main() -> Result<()> {
 fn demonstrate_config_error() {
 	info!("=== Configuration Error Example ===");
 
-	let error: GmnError = ConfigError::InvalidLogLevel {
-		level: "invalid_level".to_string(),
-	}
-	.into();
+	let error: GmnError =
+		ConfigError::InvalidLogLevel { level: "invalid_level".to_string() }.into();
 
 	display_error(&error);
 }
@@ -75,29 +75,29 @@ fn demonstrate_display_utilities() {
 	info!("=== Display Utilities Example ===");
 
 	// Warning
-	display_warning(
-		"Deprecated API",
-		"GMN-WARN-001",
-		"You are using a deprecated API endpoint",
-		Some("This endpoint will be removed in version 2.0"),
-		Some("Use the new /v2/api endpoint instead"),
-	);
+	display_warning(&DisplayMessage {
+		title: "Deprecated API",
+		code: "GMN-WARN-001",
+		message: "You are using a deprecated API endpoint",
+		context: Some("This endpoint will be removed in version 2.0"),
+		hint: Some("Use the new /v2/api endpoint instead"),
+	});
 
 	// Info
-	display_info(
-		"System Status",
-		"GMN-INFO-001",
-		"All systems operational",
-		Some("Last checked: 2026-02-09 00:30:00"),
-		None,
-	);
+	display_info(&DisplayMessage {
+		title: "System Status",
+		code: "GMN-INFO-001",
+		message: "All systems operational",
+		context: Some("Last checked: 2026-02-09 00:30:00"),
+		hint: None,
+	});
 
 	// Success
-	display_success(
-		"Operation Complete",
-		"GMN-SUCCESS-001",
-		"Database migration completed successfully",
-		Some("Migrated 1,234 records in 2.5 seconds"),
-		Some("Remember to update your application configuration"),
-	);
+	display_success(&DisplayMessage {
+		title: "Operation Complete",
+		code: "GMN-SUCCESS-001",
+		message: "Database migration completed successfully",
+		context: Some("Migrated 1,234 records in 2.5 seconds"),
+		hint: Some("Remember to update your application configuration"),
+	});
 }

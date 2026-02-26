@@ -1,10 +1,13 @@
 [workspace]
-resolver = "2"
-members = ["gmn_core", "gmn_nail", "gmn"]
+resolver = "3"
+members = ["crates/gmn_core", "crates/gmn_nail", "crates/gmn"]
+
+[workspace.dependencies]
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
 missing_debug_implementations = "warn"
+missing_docs = "warn"
 
 [workspace.lints.clippy]
 pedantic = "warn"

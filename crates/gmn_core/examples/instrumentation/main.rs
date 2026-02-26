@@ -9,11 +9,12 @@
 //! ```
 
 use gmn_core::prelude::*;
-use gmn_core::domains::{api, auth, database, rate_limit};
-use gmn_core::config::TracingConfig;
-use std::time::Instant;
+mod domains;
+use domains::{api, auth, database, rate_limit};
+use gmn_core::tracing::TracingConfig;
 use std::thread;
 use std::time::Duration;
+use std::time::Instant;
 
 fn main() -> Result<()> {
 	// Initialize with development config for better visibility
@@ -60,11 +61,7 @@ fn demonstrate_api_tracing() {
 	info!("=== API Tracing Demo ===");
 
 	// API request
-	let span = api::request_span_with_id(
-		api::HttpMethod::Get,
-		"/api/v1/users",
-		"req-12345",
-	);
+	let span = api::request_span_with_id(api::HttpMethod::Get, "/api/v1/users", "req-12345");
 	let _guard = span.enter();
 
 	info!("Processing API request");

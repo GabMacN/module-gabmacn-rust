@@ -10,16 +10,22 @@ pub enum HttpMethod {
 	/// GET request
 	Get,
 	/// POST request
+	#[allow(dead_code)]
 	Post,
 	/// PUT request
+	#[allow(dead_code)]
 	Put,
 	/// PATCH request
+	#[allow(dead_code)]
 	Patch,
 	/// DELETE request
+	#[allow(dead_code)]
 	Delete,
 	/// HEAD request
+	#[allow(dead_code)]
 	Head,
 	/// OPTIONS request
+	#[allow(dead_code)]
 	Options,
 }
 
@@ -39,6 +45,7 @@ impl HttpMethod {
 }
 
 /// Create a span for an API request
+#[allow(dead_code)]
 pub fn request_span(method: HttpMethod, path: &str) -> Span {
 	tracing::info_span!(
 		"api_request",
@@ -80,6 +87,7 @@ pub fn record_request_completion(span: &Span, status_code: u16, duration_ms: u64
 }
 
 /// Record request ID
+#[allow(dead_code)]
 pub fn record_request_id(span: &Span, request_id: &str) {
 	span.record("request_id", request_id);
 }
